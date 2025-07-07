@@ -354,38 +354,39 @@ if st.button("Save Data"):
 #st.write(f"Profit: KES {profit:.2f}")
 
 #Save / Load Buttons
-#This section is a duplicate of the save/load buttons above. Let's remove this one.
-#st.header("Save / Load Daily Data")
+  #Save data to file
+if st.button("Save Data"):
+    date_str = str(date_input)
+    data_to_save = {
+        "sales": st.session_state.sales_df.to_dict(),
+        "expenses": st.session_state.expenses_df.to_dict()
+    }
+    with open(f"data_{date_str}.json", "w") as f:
+        json.dump(data_to_save, f)
+    st.success(f"Data saved for {date_str}")
 
-#if st.button("Save Current Data"):
-#    # Combine sales and expenses into one DataFrame for saving
-#    # Need to handle potential index mismatch if shapes are different
-#    # A simple concat might not be the best way if rows don't align
-#    # For now, let's save sales and expenses separately or ensure alignment
-#    # Assuming max_rows is used for both sales and expenses input
-#    # If not, adjust accordingly
-#    combined_df = pd.DataFrame()
-#    # Add sales data
-#    for col in manual_input_cols:
-#        combined_df[col] = data[col]
-#    # Add expense data
-#    combined_df["Expense Description"] = exp_desc
-#    combined_df["Expense Amount"] = exp_amt
+   #Load data from file
+if st.button("Load Data"):
+    date_str = str(date_input)
+    try:
+        with open(f"data_{date_str}.json", "r") as f:
+            loaded_data = json.load(f)
+            st.session_state.sales_df = pd.DataFrame.from_dict(loaded_data["sales"])
+            st.session_state.expenses_df = pd.DataFrame.from_dict(loaded_data["expenses"])
+        st.success(f"Data loaded for {date_str}")
+    except FileNotFoundError:
+        st.error("No data found for that date.")
 
-#    combined_df.to_csv(data_filepath(date_str), index=False)
-#    st.success(f"Data saved for date {date_str}")
+#Create directory if not exist
+if not os.path.exists("daily_data"):
+    os.makedirs("daily_data")
 
-#Load Data Section
-#This section is a duplicate of the load section above. Let's remove this one.
-#st.subheader("Load Data for Date")
-#date_to_load = st.text_input("Enter date to load (YYYY-MM-DD)", value=date_str, key="load_date")
-#if st.button("Load Data"):
-#    loaded = load_data(date_to_load)
-#    if loaded.empty:
-#        st.info(f"No saved data found for {date_to_load}")
-#    else:
-#        # This only displays the loaded data. Need to update the input widgets
-#        # to reflect the loaded data for editing. This is a more complex state
-#        # management issue in Streamlit. For now, just displaying is sufficient
-#        # based on the original code's behavior.
-#        st.dataframe(loaded)
+today = datetime.now().strftime("%Y-%m-%d")
+sales_file = f"daily_data/{today}_sales.csv"
+expenses_file = f"daily_data/{today}_expenses.csv"
+
+#Save sales and expenses data
+edited_sales_df.to_csv(sales_file, index=False)
+edited_expenses_df.to_csv(expenses_file, index=False)
+
+st.success("✅ Data saved successfully!")
