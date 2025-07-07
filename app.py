@@ -396,7 +396,14 @@ if edited_sales_df is not None:
 else:
     st.warning("No sales data to save.")
 
-edited_sales_df.to_csv(sales_file, index=False)
-edited_expenses_df.to_csv(expenses_file, index=False)
+edited_sales_df = st.session_state.get("edited_sales_df")
+if edited_sales_df is not None:
+    edited_sales_df.to_csv(sales_file, index=False)
+else:
+    st.warning("Sales data not available or not edited.")
+edited_sales_df = st.data_editor(sales_df, key="sales_editor", num_rows="dynamic")
+st.session_state.edited_sales_df = edited_sales_df
+
+
 
 st.success("✅ Data saved successfully!")
