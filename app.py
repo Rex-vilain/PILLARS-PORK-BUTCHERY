@@ -41,16 +41,77 @@ def load_data(date):
         return pd.DataFrame(columns=cols)
 
 #Sales Input Table
-st.header("Sales Entry Table")
+ #Define items and initial prices per kg
+items = ["Pork Takeaway", "Pork Ready", "Ugali", "Chips"]
+default_prices = {
+    "Pork Takeaway": 650,
+    "Pork Ready": 800,
+    "Ugali": 50,
+    "Chips": 100
+}
 
-cols = [
-    "Pork Ready", "Pork Ready Pay", 
-    "Pork Takeaway", "Pork Takeaway Pay", 
-    "Chicken Ready", "Chicken Ready Pay", 
-    "Chicken Takeaway", "Chicken Takeaway Pay", 
-    "Chips", "Chips Pay", 
-    "Ugali", "Ugali Pay"
-]
+  #Initialize session state for prices so user can edit and keep changes
+if "prices" not in st.session_state:
+    st.session_state.prices = default_prices.copy()
+
+  #Editable prices at the top
+st.subheader("Set Prices per Kg (Editable)")
+cols = st.columns(len(items))
+for i, item in enumerate(items):
+    st.session_state.prices[item] = cols[i].number_input(
+        f"{item} Price per Kg",
+        min_value=1,
+        value=st.session_state.prices[item],
+        key=f"price_{item}"
+    )
+
+  #Prepare initial empty sales data for the table
+initial_data = {
+    "Item": items,
+    "Price per Kg": [st.session_state.prices[item] for item in items],
+    "Amount Paid": [0.0]*len(items),
+    "Weight (Kg)": [0.0]*len(items),
+    "Payment Method": ["Cash"]*len(items)  # default payment method
+}
+
+df_sales = pd.DataFrame(initial_data)
+
+  #Define payment method options
+   payment_options = ["Cash", "Mpesa"]
+
+  #Column configuration for data_editor
+column_config = {
+    "Item": st.column_config.TextColumn("Item", disabled=True),
+    "Price per Kg": st.column_config.NumberColumn("Price per Kg", disabled=True),
+    "Amount Paid": st.column_config.NumberColumn("Amount Paid", min_value=0.0),
+    "Weight (Kg)": st.column_config.NumberColumn("Weight (Kg)", disabled=True),
+    "Payment Method": st.column_config.SelectboxColumn("Payment Method", options=payment_options)
+}
+
+  #Use data_editor for editable Amount Paid and Payment Method; Weight calculated automatically
+edited = st.data_editor(
+    df_sales,
+    column_config=column_config,
+    hide_index=True,
+    num_rows="fixed"
+)
+
+  #Calculate weight based on Amount Paid / Price per Kg, update the dataframe
+for i, row in edited.iterrows():
+    price = st.session_state.prices[row["Item"]]
+    amount = row["Amount Paid"]
+    weight = amount / price if price > 0 else 0
+    edited.at[i, "Weight (Kg)"] = round(weight, 3)
+
+  #Display updated table with weights recalculated
+st.dataframe(edited, use_container_width=True)
+
+  #Show totals below the table
+total_amount = edited["Amount Paid"].sum()
+total_weight = edited["Weight (Kg)"].sum()
+
+st.markdown(f"Total Amount Paid: Ksh {total_amount:.2f}")
+[12:02, 07/07/2025] Rex: st.markdown(f"Total Weight Sold: {total_weight:.3f} Kg")
 
 #Initial empty data or loaded data
 sales_data = load_data(date_str)
