@@ -192,6 +192,18 @@ st.markdown("### Daily Expenses")
 if "expenses_df" not in st.session_state:
     st.session_state.expenses_df = pd.DataFrame(columns=["Expense Description", "Amount"])
 
+ #Initialize expenses_df if it doesn't exist
+if "expenses_df" not in st.session_state:
+    st.session_state.expenses_df = pd.DataFrame(columns=["Expense Description", "Amount"])
+
+edited_expenses_df = st.data_editor(
+    st.session_state.expenses_df,
+    num_rows="dynamic",
+    key="expenses_editor"
+)
+
+st.session_state.expenses_df = edited_expenses_df
+
  #Show editable table and update session state
 edited_expenses_df = st.data_editor(
     st.session_state.expenses_df,
