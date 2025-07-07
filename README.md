@@ -1,11 +1,32 @@
+Pillars Pork & Chicken Management App
 
-🐖 Pillars Pork Stock & Expense Tracker
+This is a Flask-based web app for managing daily sales, stock, and expenses for a pork and chicken restaurant. It allows you to:
+- Record daily sales with itemized input
+- Automatically calculate weight sold based on price/kg
+- Track expenses
+- Choose payment method (Cash or Mpesa)
+- Edit item prices anytime
+- Retrieve previous records by date
 
-This is a Streamlit web app to help manage and track stock, expenses, and profits for a pork business. The app supports:
+Features
+- Daily input form with price and payment method
+- Editable price rates per kg/item
+- Calculates total sales, expenses, and profit
+- Data saved in a JSON file for easy retrieval
 
-- Daily entry of sales in categories like pork takeaway, pork ready, ugali, and chips.
-- Auto calculation of quantities from prices based on per-kg/item rates.
-- Daily expenses tracking.
-- Live profit calculation.
-- Ability to view past records by selecting a date.
+How to Run
+1. Install dependencies  
+   pip install -r requirements.txt
+
+2. Run the app  
+   python app.py
+
+3. Open your browser at http://127.0.0.1:5000/
+
+---
+
+requirements.txt
+
+
+Flask
 
