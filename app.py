@@ -188,22 +188,25 @@ else:
 #Daily Expenses
 st.markdown("### Daily Expenses")
 
- #Editable table with session_state key
-expenses_df = st.data_editor(
-    pd.DataFrame(columns=["Expense Description", "Amount"]),
-    num_rows="dynamic",
-    key="expenses_df"
-)
+ #Use st.session_state to persist the DataFrame
+if "expenses_df" not in st.session_state:
+    st.session_state.expenses_df = pd.DataFrame(columns=["Expense Description", "Amount"])
 
- #Safely calculate total expenses
-if "expenses_df" in st.session_state and "Amount" in st.session_state.expenses_df.columns:
-    expenses_df = st.session_state.expenses_df
-    expenses_df["Amount"] = pd.to_numeric(expenses_df["Amount"], errors="coerce").fillna(0)
-    total_expenses = expenses_df["Amount"].sum()
-else:
+ #Show editable table and update session state
+edited_expenses_df = st.data_editor(
+    st.session_state.expenses_df,
+    num_rows="dynamic",
+    key="expenses_editor"
+)
+st.session_state.expenses_df = edited_expenses_df
+
+ #Calculate total expenses safely
+try:
+    st.session_state.expenses_df["Amount"] = pd.to_numeric(st.session_state.expenses_df["Amount"], errors="coerce").fillna(0)
+    total_expenses = st.session_state.expenses_df["Amount"].sum()
+except:
     total_expenses = 0
 
- #Total sales should already be defined before this
 st.markdown(f"*Total Sales Amount:* Ksh {total_sales:,.2f}")
 st.markdown(f"*Total Expenses:* Ksh {total_expenses:,.2f}")
 st.markdown(f"### *Profit: Ksh {total_sales - total_expenses:,.2f}*")
