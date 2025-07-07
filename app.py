@@ -354,7 +354,9 @@ if st.button("Save Data"):
 #st.write(f"Profit: KES {profit:.2f}")
 
 #Save data to file
-if st.button("Save Data"):
+if st.button("Save Data", key="unique_save_button"):
+    # your save logic here
+
     date_str = str(date_input)
     data_to_save = {
         "sales": st.session_state.sales_df.to_dict(),
@@ -365,7 +367,9 @@ if st.button("Save Data"):
     st.success(f"Data saved for {date_str}")
 
    #Load data from file
-if st.button("Load Data"):
+if st.button("Load Data", key="unique_load_button"):
+    # your load logic here
+    
     date_str = str(date_input)
     try:
         with open(f"data_{date_str}.json", "r") as f:
