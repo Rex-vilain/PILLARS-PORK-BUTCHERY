@@ -188,26 +188,25 @@ else:
 #Daily Expenses
 st.markdown("### Daily Expenses")
 
- #Editable table for expense entry
+ #Editable table with session_state key
 expenses_df = st.data_editor(
-    pd.DataFrame(columns=["Expense Description", "Expense Amount"]),
+    pd.DataFrame(columns=["Expense Description", "Amount"]),
     num_rows="dynamic",
-    key="expenses"
+    key="expenses_df"
 )
 
- #Ensure numeric data for calculations
-expenses_df["Expense Amount"] = pd.to_numeric(expenses_df["Expense Amount"], errors="coerce").fillna(0)
+ #Safely calculate total expenses
+if "expenses_df" in st.session_state and "Amount" in st.session_state.expenses_df.columns:
+    expenses_df = st.session_state.expenses_df
+    expenses_df["Amount"] = pd.to_numeric(expenses_df["Amount"], errors="coerce").fillna(0)
+    total_expenses = expenses_df["Amount"].sum()
+else:
+    total_expenses = 0
 
- #Calculate total expenses
-total_expenses = expenses_df["Expense Amount"].sum()
-
- #Display total expenses and profit (make sure total_sales is defined above this block)
+ #Total sales should already be defined before this
 st.markdown(f"*Total Sales Amount:* Ksh {total_sales:,.2f}")
 st.markdown(f"*Total Expenses:* Ksh {total_expenses:,.2f}")
-
- #Calculate and show profit
-profit = total_sales - total_expenses
-st.markdown(f"### *Profit: Ksh {profit:,.2f}*")
+st.markdown(f"### *Profit: Ksh {total_sales - total_expenses:,.2f}*")
 
 
 #Totals & Profit
