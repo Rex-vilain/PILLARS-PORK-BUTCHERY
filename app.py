@@ -178,40 +178,30 @@ for i, row in edited_sales.iterrows():
 
 st.dataframe(edited_sales, use_container_width=True)
 
-# Daily Expenses
-st.header("Daily Expenses")
+#Daily Expenses
+st.markdown("### Daily Expenses")
 
-#Ensure expenses data is in session state
-if "expenses_df" not in st.session_state:
-    #If sales_data was loaded and has expense columns, use that, otherwise empty
-    if "Expense Description" in st.session_state.sales_data.columns and "Expense Amount" in st.session_state.sales_data.columns:
-        #Extract expense data from loaded sales_data
-        #Assuming expense data is in the first max_exp_rows rows, adjust if needed
-        max_exp_rows = 5
-        expense_data_from_sales = st.session_state.sales_data[["Expense Description", "Expense Amount"]].head(max_exp_rows).copy()
-        #Filter out empty rows
-        expense_data_from_sales = expense_data_from_sales[expense_data_from_sales["Expense Description"].astype(str) != ""]
-        st.session_state.expenses_df = expense_data_from_sales
-    else:
-        st.session_state.expenses_df = pd.DataFrame(columns=["Description", "Amount"])
-
-
-#Use st.data_editor for expenses input
-expenses_column_config = {
-    "Description": st.column_config.TextColumn("Description", required=True),
-    "Amount": st.column_config.NumberColumn("Amount", min_value=0.0, format="%.2f", required=True)
-}
-
-edited_expenses = st.data_editor(
-    st.session_state.expenses_df,
-    column_config=expenses_column_config,
-    use_container_width=True,
-    num_rows="dynamic", # Allow adding/deleting rows
-    key="expenses_data_editor"
+ #Editable table for expense entry
+expenses_df = st.data_editor(
+    pd.DataFrame(columns=["Expense Description", "Expense Amount"]),
+    num_rows="dynamic",
+    key="expenses"
 )
 
-#Update the session state dataframe after editing
-st.session_state.expenses_df = edited_expenses
+ #Ensure numeric data for calculations
+expenses_df["Expense Amount"] = pd.to_numeric(expenses_df["Expense Amount"], errors="coerce").fillna(0)
+
+ #Calculate total expenses
+total_expenses = expenses_df["Expense Amount"].sum()
+
+ #Display total expenses and profit (make sure total_sales is defined above this block)
+st.markdown(f"*Total Sales Amount:* Ksh {total_sales:,.2f}")
+st.markdown(f"*Total Expenses:* Ksh {total_expenses:,.2f}")
+
+ #Calculate and show profit
+profit = total_sales - total_expenses
+st.markdown(f"### *Profit: Ksh {profit:,.2f}*")
+
 
 #Totals & Profit
 total_sales_amount = edited_sales["Amount Paid"].sum()
