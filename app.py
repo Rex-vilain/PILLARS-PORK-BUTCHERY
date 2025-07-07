@@ -178,6 +178,13 @@ for i, row in edited_sales.iterrows():
 
 st.dataframe(edited_sales, use_container_width=True)
 
+#Calculate total sales amount
+if "sales_df" in locals():
+    sales_df["Amount Paid"] = pd.to_numeric(sales_df["Amount Paid"], errors="coerce").fillna(0)
+    total_sales = sales_df["Amount Paid"].sum()
+else:
+    total_sales = 0
+
 #Daily Expenses
 st.markdown("### Daily Expenses")
 
