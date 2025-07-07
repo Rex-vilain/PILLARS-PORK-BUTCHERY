@@ -46,8 +46,12 @@ edited_sales = st.data_editor(
 def calc_weight(col, price):
     return col / price if price else 0
 
-edited_sales["PT Weight (kg)"] = edited_sales["Pork Takeaway"].apply(lambda x: calc_weight(x, pork_takeaway_price))
-edited_sales["PR Weight (kg)"] = edited_sales["Pork Ready"].apply(lambda x: calc_weight(x, pork_ready_price))
+
+edited_sales["Pork Takeaway"] = pd.to_numeric(edited_sales["Pork Takeaway"], errors="coerce").fillna(0)
+edited_sales["Pork Ready"] = pd.to_numeric(edited_sales["Pork Ready"], errors="coerce").fillna(0)
+
+edited_sales["PT Weight (kg)"] = edited_sales["Pork Takeaway"] / pork_takeaway_price if pork_takeaway_price else 0
+edited_sales["PR Weight (kg)"] = edited_sales["Pork Ready"] / pork_ready_price if pork_ready_price else 0
 
 total_pt = edited_sales["Pork Takeaway"].sum()
 total_pr = edited_sales["Pork Ready"].sum()
