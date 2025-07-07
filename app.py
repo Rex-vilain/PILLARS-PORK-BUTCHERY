@@ -118,7 +118,7 @@ df_sales["Pork Ready Weight (kg)"] = df_sales["Pork Ready"].apply(lambda x: calc
 df_sales["Pork Takeaway Weight (kg)"] = df_sales["Pork Takeaway"].apply(lambda x: calc_weight(price_pt, x))
 df_sales["Chicken Ready Weight (kg)"] = df_sales["Chicken Ready"].apply(lambda x: calc_weight(price_pr, x))  # assuming same price as pork ready?
 df_sales["Chicken Takeaway Weight (kg)"] = df_sales["Chicken Takeaway"].apply(lambda x: calc_weight(price_pt, x))  # assuming same price as pork takeaway?
-For chips and ugali weights just keep amounts as is (no kg)
+#For chips and ugali weights just keep amounts as is (no kg)
 df_sales["Chips Qty"] = df_sales["Chips"]
 df_sales["Ugali Qty"] = df_sales["Ugali"]
 
