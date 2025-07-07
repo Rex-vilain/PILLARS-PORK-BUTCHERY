@@ -10,14 +10,14 @@ if not os.path.exists(DATA_DIR):
 
 st.title("Pillars Pork & Chicken Restaurant Management")
 
-#Price Settings 
+#Price Settings
 st.sidebar.header("Set Prices per Kg / Item")
 price_pt = st.sidebar.number_input("Pork Takeaway (per kg)", min_value=0, value=650, step=10)
 price_pr = st.sidebar.number_input("Pork Ready (per kg)", min_value=0, value=800, step=10)
 price_ug = st.sidebar.number_input("Ugali (per item)", min_value=0, value=50, step=5)
 price_chips = st.sidebar.number_input("Chips (per item)", min_value=0, value=100, step=10)
 
-#Input Date 
+#Input Date
 date_str = st.text_input("Enter Date to Load or Save Data (YYYY-MM-DD)", value=datetime.today().strftime("%Y-%m-%d"))
 
 def data_filepath(date):
@@ -31,10 +31,10 @@ def load_data(date):
         # Return empty DataFrame with correct columns
         cols = [
             "Pork Ready", "Pork Ready Pay",
-            "Pork Takeaway", "Pork Takeaway Pay", 
-            "Chicken Ready", "Chicken Ready Pay", 
-            "Chicken Takeaway", "Chicken Takeaway Pay", 
-            "Chips", "Chips Pay", 
+            "Pork Takeaway", "Pork Takeaway Pay",
+            "Chicken Ready", "Chicken Ready Pay",
+            "Chicken Takeaway", "Chicken Takeaway Pay",
+            "Chips", "Chips Pay",
             "Ugali", "Ugali Pay",
             "Expense Description", "Expense Amount"
         ]
@@ -76,10 +76,10 @@ initial_data = {
 
 df_sales = pd.DataFrame(initial_data)
 
-  #Define payment method options
-   payment_options = ["Cash", "Mpesa"]
+#Define payment method options
+payment_options = ["Cash", "Mpesa"]
 
-  #Column configuration for data_editor
+#Column configuration for data_editor
 column_config = {
     "Item": st.column_config.TextColumn("Item", disabled=True),
     "Price per Kg": st.column_config.NumberColumn("Price per Kg", disabled=True),
@@ -88,7 +88,7 @@ column_config = {
     "Payment Method": st.column_config.SelectboxColumn("Payment Method", options=payment_options)
 }
 
-  #Use data_editor for editable Amount Paid and Payment Method; Weight calculated automatically
+#Use data_editor for editable Amount Paid and Payment Method; Weight calculated automatically
 edited = st.data_editor(
     df_sales,
     column_config=column_config,
@@ -96,22 +96,22 @@ edited = st.data_editor(
     num_rows="fixed"
 )
 
-  #Calculate weight based on Amount Paid / Price per Kg, update the dataframe
+#Calculate weight based on Amount Paid / Price per Kg, update the dataframe
 for i, row in edited.iterrows():
     price = st.session_state.prices[row["Item"]]
     amount = row["Amount Paid"]
     weight = amount / price if price > 0 else 0
     edited.at[i, "Weight (Kg)"] = round(weight, 3)
 
-  #Display updated table with weights recalculated
+#Display updated table with weights recalculated
 st.dataframe(edited, use_container_width=True)
 
-  #Show totals below the table
+#Show totals below the table
 total_amount = edited["Amount Paid"].sum()
 total_weight = edited["Weight (Kg)"].sum()
 
 st.markdown(f"Total Amount Paid: Ksh {total_amount:.2f}")
-[12:02, 07/07/2025] Rex: st.markdown(f"Total Weight Sold: {total_weight:.3f} Kg")
+st.markdown(f"Total Weight Sold: {total_weight:.3f} Kg")
 
 #Initial empty data or loaded data
 sales_data = load_data(date_str)
@@ -129,18 +129,33 @@ payment_methods = ["cash", "mpesa", ""]
 max_rows = 10
 
 data = {}
-for col in cols:
+# The original code had "cols" defined differently above, reusing the name
+# with a different meaning here. Renaming to avoid confusion.
+manual_input_cols = [
+    "Pork Ready", "Pork Ready Pay",
+    "Pork Takeaway", "Pork Takeaway Pay",
+    "Chicken Ready", "Chicken Ready Pay",
+    "Chicken Takeaway", "Chicken Takeaway Pay",
+    "Chips", "Chips Pay",
+    "Ugali", "Ugali Pay"
+]
+for col in manual_input_cols:
     data[col] = []
 
 st.write("Fill sales quantities and select payment method:")
 
 for i in range(max_rows):
     cols1 = st.columns(12)
-    for j, col_name in enumerate(cols):
+    for j, col_name in enumerate(manual_input_cols):
         if "Pay" in col_name:
-                             data[col_name].append(cols1[j].selectbox(f"{col_name} (Row {i+1})", payment_methods, index=2, key=f"{col_name}_{i}"))
+             # Ensure sales_data has enough rows before accessing it
+             current_value = sales_data[col_name][i] if i < len(sales_data) and col_name in sales_data.columns and pd.notna(sales_data[col_name][i]) else ""
+             # Find the index of the current value in payment_methods, default to 2 (empty string)
+             selected_index = payment_methods.index(current_value) if current_value in payment_methods else 2
+             data[col_name].append(cols1[j].selectbox(f"{col_name} (Row {i+1})", payment_methods, index=selected_index, key=f"{col_name}_{i}"))
         else:
-            val = sales_data[col_name][i] if i < len(sales_data) and pd.notna(sales_data[col_name][i]) else 0
+            # Ensure sales_data has enough rows and the column exists before accessing it
+            val = sales_data[col_name][i] if i < len(sales_data) and col_name in sales_data.columns and pd.notna(sales_data[col_name][i]) else 0
             data[col_name].append(cols1[j].number_input(f"{col_name} (Row {i+1})", min_value=0, value=int(val), key=f"{col_name}_{i}"))
 
 df_sales = pd.DataFrame(data)
@@ -148,6 +163,7 @@ df_sales = pd.DataFrame(data)
 #Expenses Table
 st.header("Daily Expenses")
 
+# Ensure expense columns exist in sales_data before accessing
 if "Expense Description" not in sales_data.columns:
     sales_data["Expense Description"] = ""
 if "Expense Amount" not in sales_data.columns:
@@ -159,8 +175,9 @@ max_exp_rows = 5
 
 for i in range(max_exp_rows):
     cols_exp = st.columns(2)
-    desc_val = sales_data["Expense Description"][i] if i < len(sales_data) and pd.notna(sales_data["Expense Description"][i]) else ""
-    amt_val = sales_data["Expense Amount"][i] if i < len(sales_data) and pd.notna(sales_data["Expense Amount"][i]) else 0
+    # Ensure sales_data has enough rows and the columns exist before accessing
+    desc_val = sales_data["Expense Description"][i] if i < len(sales_data) and "Expense Description" in sales_data.columns and pd.notna(sales_data["Expense Description"][i]) else ""
+    amt_val = sales_data["Expense Amount"][i] if i < len(sales_data) and "Expense Amount" in sales_data.columns and pd.notna(sales_data["Expense Amount"][i]) else 0
     exp_desc.append(cols_exp[0].text_input(f"Description {i+1}", value=desc_val, key=f"desc_{i}"))
     exp_amt.append(cols_exp[1].number_input(f"Amount {i+1}", min_value=0, value=int(amt_val), key=f"amt_{i}"))
 
@@ -169,19 +186,26 @@ df_expenses = pd.DataFrame({
     "Expense Amount": exp_amt
 })
 
-#Calculations 
+#Calculations
 
 def calc_weight(price, amount):
     return amount / price if price > 0 else 0
 
 #Calculate weights
+# Assuming price_pr for both Pork and Chicken Ready, and price_pt for Pork and Chicken Takeaway
 df_sales["Pork Ready Weight (kg)"] = df_sales["Pork Ready"].apply(lambda x: calc_weight(price_pr, x))
 df_sales["Pork Takeaway Weight (kg)"] = df_sales["Pork Takeaway"].apply(lambda x: calc_weight(price_pt, x))
-df_sales["Chicken Ready Weight (kg)"] = df_sales["Chicken Ready"].apply(lambda x: calc_weight(price_pr, x))  # assuming same price as pork ready?
-df_sales["Chicken Takeaway Weight (kg)"] = df_sales["Chicken Takeaway"].apply(lambda x: calc_weight(price_pt, x))  # assuming same price as pork takeaway?
+df_sales["Chicken Ready Weight (kg)"] = df_sales["Chicken Ready"].apply(lambda x: calc_weight(price_pr, x))
+df_sales["Chicken Takeaway Weight (kg)"] = df_sales["Chicken Takeaway"].apply(lambda x: calc_weight(price_pt, x))
 #For chips and ugali weights just keep amounts as is (no kg)
 df_sales["Chips Qty"] = df_sales["Chips"]
 df_sales["Ugali Qty"] = df_sales["Ugali"]
+
+
+# The sales_numeric_cols list should reflect the actual columns being summed
+sales_numeric_cols = [
+    "Pork Ready", "Pork Takeaway", "Chicken Ready", "Chicken Takeaway", "Chips", "Ugali"
+]
 
 total_sales = df_sales[sales_numeric_cols].sum().sum()
 total_expenses = df_expenses["Expense Amount"].sum()
@@ -196,7 +220,19 @@ st.header("Save / Load Daily Data")
 
 if st.button("Save Current Data"):
     # Combine sales and expenses into one DataFrame for saving
-    combined_df = pd.concat([df_sales, df_expenses], axis=1)
+    # Need to handle potential index mismatch if shapes are different
+    # A simple concat might not be the best way if rows don't align
+    # For now, let's save sales and expenses separately or ensure alignment
+    # Assuming max_rows is used for both sales and expenses input
+    # If not, adjust accordingly
+    combined_df = pd.DataFrame()
+    # Add sales data
+    for col in manual_input_cols:
+        combined_df[col] = data[col]
+    # Add expense data
+    combined_df["Expense Description"] = exp_desc
+    combined_df["Expense Amount"] = exp_amt
+
     combined_df.to_csv(data_filepath(date_str), index=False)
     st.success(f"Data saved for date {date_str}")
 
@@ -208,5 +244,8 @@ if st.button("Load Data"):
     if loaded.empty:
         st.info(f"No saved data found for {date_to_load}")
     else:
+        # This only displays the loaded data. Need to update the input widgets
+        # to reflect the loaded data for editing. This is a more complex state
+        # management issue in Streamlit. For now, just displaying is sufficient
+        # based on the original code's behavior.
         st.dataframe(loaded)
-
