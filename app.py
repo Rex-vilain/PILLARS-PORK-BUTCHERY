@@ -10,6 +10,75 @@ if not os.path.exists(DATA_DIR):
 
 st.title("Pillars Pork & Chicken Restaurant Management")
 
+#SALES INPUT TABLE
+if "sales_df" not in st.session_state:
+    st.session_state.sales_df = pd.DataFrame({
+        "Item": ["Pork Takeaway", "Pork Ready", "Ugali", "Chips"],
+        "Total Price (Ksh)": [0, 0, 0, 0],
+        "Payment Mode": ["Cash", "Cash", "Cash", "Cash"],
+        "Price per Kg/unit": [650, 800, 50, 100],
+        "Quantity": [0, 0, 0, 0]
+    })
+
+#Recalculate quantity
+st.session_state.sales_df["Quantity"] = st.session_state.sales_df["Total Price (Ksh)"] / st.session_state.sales_df["Price per Kg/unit"]
+
+st.subheader("🧾 Sales Entry")
+edited_sales_df = st.data_editor(
+    st.session_state.sales_df,
+    num_rows="dynamic",
+    key="sales_editor"
+)
+
+total_sales_amount = edited_sales_df["Total Price (Ksh)"].sum()
+st.write(f"Total Sales: Ksh {total_sales_amount:,.2f}")
+
+
+#EXPENSES INPUT TABLE 
+if "expenses_df" not in st.session_state:
+st.session_state.expenses_df = pd.DataFrame({
+        "Expense Item": [],
+        "Amount": [],
+        "Payment Mode": []
+    })
+
+st.subheader("💸 Expenses Entry")
+edited_expenses_df = st.data_editor(
+    st.session_state.expenses_df,
+    num_rows="dynamic",
+    key="expenses_editor"
+)
+
+total_expenses = edited_expenses_df["Amount"].sum() if "Amount" in edited_expenses_df.columns else 0
+st.write(f"Total Expenses: Ksh {total_expenses:,.2f}")
+
+
+#SAVE DATA
+today = datetime.now().strftime("%Y-%m-%d")
+save_path = f"daily_data/{today}_data.xlsx"
+
+if st.button("💾 Save Today's Records"):
+    with pd.ExcelWriter(save_path) as writer:
+        edited_sales_df.to_excel(writer, sheet_name="Sales", index=False)
+        edited_expenses_df.to_excel(writer, sheet_name="Expenses", index=False)
+    st.success("Data saved successfully!")
+
+#VIEW PAST DATA
+st.subheader("📅 View Past Records")
+selected_date = st.date_input("Select a date to view records")
+view_path = f"daily_data/{selected_date.strftime('%Y-%m-%d')}_data.xlsx"
+
+if os.path.exists(view_path):
+    sales_data = pd.read_excel(view_path, sheet_name="Sales")
+    expenses_data = pd.read_excel(view_path, sheet_name="Expenses")
+    
+    st.write("### Sales Data")
+    st.dataframe(sales_data, use_container_width=True)
+    st.write("### Expenses Data")
+    st.dataframe(expenses_data, use_container_width=True)
+else:
+    st.info("No data found for selected date.")
+
 #Price Settings
 st.sidebar.header("Set Prices per Kg / Item")
 price_pt = st.sidebar.number_input("Pork Takeaway (per kg)", min_value=0, value=650, step=10)
