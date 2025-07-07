@@ -389,6 +389,13 @@ sales_file = f"daily_data/{today}_sales.csv"
 expenses_file = f"daily_data/{today}_expenses.csv"
 
 #Save sales and expenses data
+
+edited_sales_df = st.session_state.get("edited_sales_df")
+if edited_sales_df is not None:
+    edited_sales_df.to_csv(sales_file, index=False)
+else:
+    st.warning("No sales data to save.")
+
 edited_sales_df.to_csv(sales_file, index=False)
 edited_expenses_df.to_csv(expenses_file, index=False)
 
