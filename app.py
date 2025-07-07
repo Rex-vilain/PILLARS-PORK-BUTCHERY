@@ -353,8 +353,7 @@ if st.button("Save Data"):
 #st.write(f"Total Expenses: KES {total_expenses:.2f}")
 #st.write(f"Profit: KES {profit:.2f}")
 
-#Save / Load Buttons
-  #Save data to file
+#Save data to file
 if st.button("Save Data"):
     date_str = str(date_input)
     data_to_save = {
