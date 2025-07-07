@@ -74,7 +74,7 @@ for col in cols:
 st.write("Fill sales quantities and select payment method:")
 
 for i in range(max_rows):
-    cols 1 = st.columns(12)
+    cols1 = st.columns(12)
     for j, col_name in enumerate(cols):
         if "Pay" in col_name:
                              data[col_name].append(cols1[j].selectbox(f"{col_name} (Row {i+1})", payment_methods, index=2, key=f"{col_name}_{i}"))
