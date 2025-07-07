@@ -53,11 +53,11 @@ edited_sales["Pork Ready"] = pd.to_numeric(edited_sales["Pork Ready"], errors="c
 edited_sales["PT Weight (kg)"] = edited_sales["Pork Takeaway"] / pork_takeaway_price if pork_takeaway_price else 0
 edited_sales["PR Weight (kg)"] = edited_sales["Pork Ready"] / pork_ready_price if pork_ready_price else 0
 
-total_pt = edited_sales["Pork Takeaway"].sum()
-total_pr = edited_sales["Pork Ready"].sum()
-total_ugali = edited_sales["Ugali"].sum()
-total_chips = edited_sales["Chips"].sum()
-total_sales = total_pt + total_pr + total_ugali + total_chips
+#Convert columns to numeric safely, replace NaNs with 0, then sum
+total_pt = pd.to_numeric(edited_sales["Pork Takeaway"], errors="coerce").fillna(0).sum()
+total_pr = pd.to_numeric(edited_sales["Pork Ready"], errors="coerce").fillna(0).sum()
+total_ugali = pd.to_numeric(edited_sales["Ugali"], errors="coerce").fillna(0).sum()
+total_chips = pd.to_numeric(edited_sales["Chips"], errors="coerce").fillna(0).sum()
 
 #Expenses Entry 
 st.subheader("🧾 Daily Expenses")
