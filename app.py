@@ -1,108 +1,151 @@
-
 import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
 
-#Setup 
-st.set_page_config(layout="wide")
-st.title("🐖 Pork Business Daily Tracker")
+#Folder to save data files
+DATA_DIR = "data"
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
 
-#Editable Prices
+st.title("Pillars Pork & Chicken Restaurant Management")
+
+#Price Settings 
 st.sidebar.header("Set Prices per Kg / Item")
-pork_takeaway_price = st.sidebar.number_input("Pork Takeaway (per kg)", value=650)
-pork_ready_price = st.sidebar.number_input("Pork Ready (per kg)", value=800)
-ugali_price = st.sidebar.number_input("Ugali", value=50)
-chips_price = st.sidebar.number_input("Chips", value=100)
+price_pt = st.sidebar.number_input("Pork Takeaway (per kg)", min_value=0, value=650, step=10)
+price_pr = st.sidebar.number_input("Pork Ready (per kg)", min_value=0, value=800, step=10)
+price_ug = st.sidebar.number_input("Ugali (per item)", min_value=0, value=50, step=5)
+price_chips = st.sidebar.number_input("Chips (per item)", min_value=0, value=100, step=10)
 
-#Date Handling 
-today = st.date_input("Select Date", value=datetime.today()).strftime("%Y-%m-%d")
-folder = "pork_logs"
-if not os.path.exists(folder):
-    os.makedirs(folder)
+#Input Date 
+date_str = st.text_input("Enter Date to Load or Save Data (YYYY-MM-DD)", value=datetime.today().strftime("%Y-%m-%d"))
 
-filename = f"{folder}/{today}.csv"
-expenses_filename = f"{folder}/{today}_expenses.csv"
+def data_filepath(date):
+    return os.path.join(DATA_DIR, f"{date}.csv")
 
+def load_data(date):
+    path = data_filepath(date)
+    if os.path.exists(path):
+        return pd.read_csv(path)
+    else:
+        # Return empty DataFrame with correct columns
+        cols = [
+            "Pork Ready", "Pork Ready Pay",
+            "Pork Takeaway", "Pork Takeaway Pay", 
+            "Chicken Ready", "Chicken Ready Pay", 
+            "Chicken Takeaway", "Chicken Takeaway Pay", 
+            "Chips", "Chips Pay", 
+            "Ugali", "Ugali Pay",
+            "Expense Description", "Expense Amount"
+        ]
+        return pd.DataFrame(columns=cols)
 
-#Sales Entry 
-st.subheader("🍖 Sales Entry")
-cols = ["Pork Takeaway", "Payment PT", "Pork Ready", "Payment PR", "Ugali", "Payment Ugali", "Chips", "Payment Chips"]
-default_data = pd.DataFrame(columns=cols)
+#Sales Input Table
+st.header("Sales Entry Table")
 
-if os.path.exists(filename):
-    sales_data = pd.read_csv(filename)
-else:
-    sales_data = default_data
+cols = [
+    "Pork Ready", "Pork Ready Pay", 
+    "Pork Takeaway", "Pork Takeaway Pay", 
+    "Chicken Ready", "Chicken Ready Pay", 
+    "Chicken Takeaway", "Chicken Takeaway Pay", 
+    "Chips", "Chips Pay", 
+    "Ugali", "Ugali Pay"
+]
 
-edited_sales = st.data_editor(
-    sales_data,
-    use_container_width=True,
-    num_rows="dynamic",
-    key="sales"
-)
+#Initial empty data or loaded data
+sales_data = load_data(date_str)
 
-#Calculate Totals 
-def calc_weight(col, price):
-    return col / price if price else 0
+#Sales columns numeric
+sales_numeric_cols = [
+    "Pork Ready", "Pork Takeaway", "Chicken Ready", "Chicken Takeaway", "Chips", "Ugali"
+]
 
+#Payment methods allowed
+payment_methods = ["cash", "mpesa", ""]
 
-edited_sales["Pork Takeaway"] = pd.to_numeric(edited_sales["Pork Takeaway"], errors="coerce").fillna(0)
-edited_sales["Pork Ready"] = pd.to_numeric(edited_sales["Pork Ready"], errors="coerce").fillna(0)
+#We’ll build an editable table row by row in streamlit with inputs
+Limit max rows (e.g. 10 rows)
+max_rows = 10
 
-edited_sales["PT Weight (kg)"] = edited_sales["Pork Takeaway"] / pork_takeaway_price if pork_takeaway_price else 0
-edited_sales["PR Weight (kg)"] = edited_sales["Pork Ready"] / pork_ready_price if pork_ready_price else 0
+data = {}
+for col in cols:
+    data[col] = []
 
-#Convert columns to numeric safely, replace NaNs with 0, then sum
-total_pt = pd.to_numeric(edited_sales["Pork Takeaway"], errors="coerce").fillna(0).sum()
-total_pr = pd.to_numeric(edited_sales["Pork Ready"], errors="coerce").fillna(0).sum()
-total_ugali = pd.to_numeric(edited_sales["Ugali"], errors="coerce").fillna(0).sum()
-total_chips = pd.to_numeric(edited_sales["Chips"], errors="coerce").fillna(0).sum()
+st.write("Fill sales quantities and select payment method:")
 
-#Expenses Entry 
-st.subheader("🧾 Daily Expenses")
-if os.path.exists(expenses_filename):
-    expenses_df = pd.read_csv(expenses_filename)
-else:
-    expenses_df = pd.DataFrame(columns=["Description", "Amount"])
+for i in range(max_rows):
+    cols1 = st.columns(12)
+    for j, col_name in enumerate(cols):
+        if "Pay" in col_name:
+                             data[col_name].append(cols1[j].selectbox(f"{col_name} (Row {i+1})", payment_methods, index=2, key=f"{col_name}_{i}"))
+        else:
+            val = sales_data[col_name][i] if i < len(sales_data) and pd.notna(sales_data[col_name][i]) else 0
+            data[col_name].append(cols1[j].number_input(f"{col_name} (Row {i+1})", min_value=0, value=int(val), key=f"{col_name}_{i}"))
 
-edited_expenses = st.data_editor(
-    expenses_df,
-    use_container_width=True,
-    num_rows="dynamic",
-       key="expenses"
-)
+df_sales = pd.DataFrame(data)
 
-total_expenses = edited_expenses["Amount"].sum() if not edited_expenses.empty else 0
+#Expenses Table
+st.header("Daily Expenses")
+
+if "Expense Description" not in sales_data.columns:
+    sales_data["Expense Description"] = ""
+if "Expense Amount" not in sales_data.columns:
+    sales_data["Expense Amount"] = 0
+
+exp_desc = []
+exp_amt = []
+max_exp_rows = 5
+
+for i in range(max_exp_rows):
+    cols_exp = st.columns(2)
+    desc_val = sales_data["Expense Description"][i] if i < len(sales_data) and pd.notna(sales_data["Expense Description"][i]) else ""
+    amt_val = sales_data["Expense Amount"][i] if i < len(sales_data) and pd.notna(sales_data["Expense Amount"][i]) else 0
+    exp_desc.append(cols_exp[0].text_input(f"Description {i+1}", value=desc_val, key=f"desc_{i}"))
+    exp_amt.append(cols_exp[1].number_input(f"Amount {i+1}", min_value=0, value=int(amt_val), key=f"amt_{i}"))
+
+df_expenses = pd.DataFrame({
+    "Expense Description": exp_desc,
+    "Expense Amount": exp_amt
+})
+
+#Calculations 
+
+def calc_weight(price, amount):
+    return amount / price if price > 0 else 0
+
+#Calculate weights
+df_sales["Pork Ready Weight (kg)"] = df_sales["Pork Ready"].apply(lambda x: calc_weight(price_pr, x))
+df_sales["Pork Takeaway Weight (kg)"] = df_sales["Pork Takeaway"].apply(lambda x: calc_weight(price_pt, x))
+df_sales["Chicken Ready Weight (kg)"] = df_sales["Chicken Ready"].apply(lambda x: calc_weight(price_pr, x))  # assuming same price as pork ready?
+df_sales["Chicken Takeaway Weight (kg)"] = df_sales["Chicken Takeaway"].apply(lambda x: calc_weight(price_pt, x))  # assuming same price as pork takeaway?
+For chips and ugali weights just keep amounts as is (no kg)
+df_sales["Chips Qty"] = df_sales["Chips"]
+df_sales["Ugali Qty"] = df_sales["Ugali"]
+
+total_sales = df_sales[sales_numeric_cols].sum().sum()
+total_expenses = df_expenses["Expense Amount"].sum()
 profit = total_sales - total_expenses
 
-#Summary 
-st.subheader("📊 Daily Summary")
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Sales", f"Ksh {total_sales:,.0f}")
-col2.metric("Total Expenses", f"Ksh {total_expenses:,.0f}")
-col3.metric("Net Profit", f"Ksh {profit:,.0f}")
+st.write(f"Total Sales: KES {total_sales:.2f}")
+st.write(f"Total Expenses: KES {total_expenses:.2f}")
+st.write(f"Profit: KES {profit:.2f}")
 
-#Save Button 
-if st.button("💾 Save Today's Data"):
-    edited_sales.to_csv(filename, index=False)
-    edited_expenses.to_csv(expenses_filename, index=False)
-    st.success("Data saved successfully!")
+#Save / Load Buttons
+st.header("Save / Load Daily Data")
 
-# View Past Records 
-st.subheader("📁 View Past Records")
-log_files = sorted([f for f in os.listdir(folder) if f.endswith(".csv") and "expenses" not in f])
+if st.button("Save Current Data"):
+    # Combine sales and expenses into one DataFrame for saving
+    combined_df = pd.concat([df_sales, df_expenses], axis=1)
+    combined_df.to_csv(data_filepath(date_str), index=False)
+    st.success(f"Data saved for date {date_str}")
 
-selected_file = st.selectbox("Select a date to view:", log_files)
-if selected_file:
-    past_sales = pd.read_csv(f"{folder}/{selected_file}")
-    st.write("Sales Data:")
-    st.dataframe(past_sales, use_container_width=True)
-
-    exp_file = selected_file.replace(".csv", "_expenses.csv")
-    if os.path.exists(f"{folder}/{exp_file}"):
-        past_exp = pd.read_csv(f"{folder}/{exp_file}")
-        st.write("Expenses Data:")
-        st.dataframe(past_exp, use_container_width=True)
+#Load Data Section
+st.subheader("Load Data for Date")
+date_to_load = st.text_input("Enter date to load (YYYY-MM-DD)", value=date_str, key="load_date")
+if st.button("Load Data"):
+    loaded = load_data(date_to_load)
+    if loaded.empty:
+        st.info(f"No saved data found for {date_to_load}")
     else:
-        st.warning("No expense data for that day.")
+        st.dataframe(loaded)
+
