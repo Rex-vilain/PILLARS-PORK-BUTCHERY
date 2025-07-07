@@ -380,30 +380,5 @@ if st.button("Load Data", key="unique_load_button"):
     except FileNotFoundError:
         st.error("No data found for that date.")
 
-#Create directory if not exist
-if not os.path.exists("daily_data"):
-    os.makedirs("daily_data")
-
-today = datetime.now().strftime("%Y-%m-%d")
-sales_file = f"daily_data/{today}_sales.csv"
-expenses_file = f"daily_data/{today}_expenses.csv"
-
-#Save sales and expenses data
-
-edited_sales_df = st.session_state.get("edited_sales_df")
-if edited_sales_df is not None:
-    edited_sales_df.to_csv(sales_file, index=False)
-else:
-    st.warning("No sales data to save.")
-
-edited_sales_df = st.session_state.get("edited_sales_df")
-if edited_sales_df is not None:
-    edited_sales_df.to_csv(sales_file, index=False)
-else:
-    st.warning("Sales data not available or not edited.")
-edited_sales_df = st.data_editor(sales_df, key="sales_editor", num_rows="dynamic")
-st.session_state.edited_sales_df = edited_sales_df
 
 
-
-st.success("✅ Data saved successfully!")
