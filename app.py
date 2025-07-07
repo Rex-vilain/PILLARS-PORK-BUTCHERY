@@ -41,107 +41,120 @@ def load_data(date):
         return pd.DataFrame(columns=cols)
 
 #Sales Input Table
- #Define items and initial prices per kg
-items = ["Pork Takeaway", "Pork Ready", "Ugali", "Chips"]
-default_prices = {
-    "Pork Takeaway": 650,
-    "Pork Ready": 800,
-    "Ugali": 50,
-    "Chips": 100
+import streamlit as st
+import pandas as pd
+import os
+from datetime import datetime
+
+ #Setup folder for saving/loading data 
+DATA_DIR = "daily_data"
+os.makedirs(DATA_DIR, exist_ok=True)
+
+st.title("Pillars Pork Butchery Sales & Expenses")
+
+ #Price inputs
+st.sidebar.header("Set Prices per Kg / Item")
+pork_takeaway_price = st.sidebar.number_input("Pork Takeaway (per kg)", min_value=1, value=650)
+pork_ready_price = st.sidebar.number_input("Pork Ready (per kg)", min_value=1, value=800)
+ugali_price = st.…
+[12:14, 07/07/2025] Rex: "Payment Method": ["Cash"] * rows
 }
+df_sales = pd.DataFrame(data)
 
-  #Initialize session state for prices so user can edit and keep changes
-if "prices" not in st.session_state:
-    st.session_state.prices = default_prices.copy()
-
-  #Editable prices at the top
-st.subheader("Set Prices per Kg (Editable)")
-cols = st.columns(len(items))
-for i, item in enumerate(items):
-    st.session_state.prices[item] = cols[i].number_input(
-        f"{item} Price per Kg",
-        min_value=1,
-        value=st.session_state.prices[item],
-        key=f"price_{item}"
-    )
-
-  #Prepare initial empty sales data for the table
-initial_data = {
-    "Item": items,
-    "Price per Kg": [st.session_state.prices[item] for item in items],
-    "Amount Paid": [0.0]*len(items),
-    "Weight (Kg)": [0.0]*len(items),
-    "Payment Method": ["Cash"]*len(items)  # default payment method
-}
-
-df_sales = pd.DataFrame(initial_data)
-
-#Define payment method options
+item_options = [""] + list(default_prices.keys())
 payment_options = ["Cash", "Mpesa"]
 
-#Column configuration for data_editor
 column_config = {
-    "Item": st.column_config.TextColumn("Item", disabled=True),
+    "Item": st.column_config.SelectboxColumn("Item", options=item_options),
     "Price per Kg": st.column_config.NumberColumn("Price per Kg", disabled=True),
     "Amount Paid": st.column_config.NumberColumn("Amount Paid", min_value=0.0),
     "Weight (Kg)": st.column_config.NumberColumn("Weight (Kg)", disabled=True),
     "Payment Method": st.column_config.SelectboxColumn("Payment Method", options=payment_options)
 }
 
-#Use data_editor for editable Amount Paid and Payment Method; Weight calculated automatically
-edited = st.data_editor(
-    df_sales,
-    column_config=column_config,
-    hide_index=True,
-    num_rows="fixed"
-)
+edited_sales = st.data_editor(df_sales, column_config=column_config, num_rows="fixed", key="sales_data")
 
-#Calculate weight based on Amount Paid / Price per Kg, update the dataframe
-for i, row in edited.iterrows():
-    price = st.session_state.prices[row["Item"]]
-    amount = row["Amount Paid"]
-    weight = amount / price if price > 0 else 0
-    edited.at[i, "Weight (Kg)"] = round(weight, 3)
+ #Auto-calculate price and weight
+for i, row in edited_sales.iterrows():
+    item = row["Item"]
+    price = default_prices.get(item, 0)
+    edited_sales.at[i, "Price per Kg"] = price
+    amount_paid = row["Amount Paid"]
+    weight = round(amount_paid / price, 3) if price > 0 else 0
+    edited_sales.at[i, "Weight (Kg)"] = weight
 
-#Display updated table with weights recalculated
-st.dataframe(edited, use_container_width=True)
+st.dataframe(edited_sales, use_container_width=True)
 
-#Show totals below the table
-total_amount = edited["Amount Paid"].sum()
-total_weight = edited["Weight (Kg)"].sum()
+ # Daily Expenses
+st.header("Daily Expenses")
 
-st.markdown(f"Total Amount Paid: Ksh {total_amount:.2f}")
-st.markdown(f"Total Weight Sold: {total_weight:.3f} Kg")
+if "expenses" not in st.session_state:
+    st.session_state.expenses = []
 
-#Initial empty data or loaded data
-sales_data = load_data(date_str)
+with st.form("expenses_form", clear_on_submit=True):
+    col1, col2 = st.columns([3,1])
+    desc = col1.text_input("Description")
+    amt = col2.number_input("Amount", min_value=0.0, format="%.2f")
+    submitted = st.form_submit_button("Add Expense")
+    if submitted and desc and amt > 0:
+        st.session_state.expenses.append({"Description": desc, "Amount": amt})
 
-#Sales columns numeric
-sales_numeric_cols = [
-    "Pork Ready", "Pork Takeaway", "Chicken Ready", "Chicken Takeaway", "Chips", "Ugali"
-]
+if st.session_state.expenses:
+    df_expenses = pd.DataFrame(st.session_state.expenses)
+    st.table(df_expenses)
+else:
+    df_expenses = pd.DataFrame(columns=["Description", "Amount"])
+    st.write("No expenses added yet.")
 
-#Payment methods allowed
-payment_methods = ["cash", "mpesa", ""]
+ #Totals & Profit
+total_sales_amount = edited_sales["Amount Paid"].sum()
+total_expenses = df_expenses["Amount"].sum()
+profit = total_sales_amount - total_expenses
 
-#We’ll build an editable table row by row in streamlit with inputs
-#Limit max rows (e.g. 10 rows)
-max_rows = 10
+st.markdown(f"Total Sales Amount: Ksh {total_sales_amount:.2f}")
+st.markdown(f"Total Expenses: Ksh {total_expenses:.2f}")
+st.markdown(f"## Profit: Ksh {profit:.2f}")
 
-data = {}
-# The original code had "cols" defined differently above, reusing the name
-# with a different meaning here. Renaming to avoid confusion.
-manual_input_cols = [
-    "Pork Ready", "Pork Ready Pay",
-    "Pork Takeaway", "Pork Takeaway Pay",
-    "Chicken Ready", "Chicken Ready Pay",
-    "Chicken Takeaway", "Chicken Takeaway Pay",
-    "Chips", "Chips Pay",
-    "Ugali", "Ugali Pay"
-]
-for col in manual_input_cols:
-    data[col] = []
+ # Save / Load Data 
 
+st.header("Save or Load Data by Date")
+
+def save_data(date_str):
+    data = {
+        "prices": default_prices,
+        "sales": edited_sales.to_dict(orient="records"),
+        "expenses": st.session_state.expenses
+    }
+    filename = os.path.join(DATA_DIR, f"{date_str}.json")
+    pd.Series(data).to_json(filename)
+    st.success(f"Data saved for {date_str}")
+
+def load_data(date_str):
+   filename = os.path.join(DATA_DIR, f"{date_str}.json")
+    if os.path.exists(filename):
+        data = pd.read_json(filename, typ='series')
+        prices = data["prices"]
+        sales = pd.DataFrame(data["sales"])
+        expenses = pd.DataFrame(data["expenses"])
+        return prices, sales, expenses
+    else:
+        st.error("No data found for that date.")
+        return None, None, None
+
+ #date_to_load = st.date_input("Select Date to Load", value=datetime.today())
+if st.button("Load Data"):
+    loaded_prices, loaded_sales, loaded_expenses = load_data(date_to_load.strftime("%Y-%m-%d"))
+    if loaded_prices:
+        st.write("### Loaded Prices")
+        st.json(loaded_prices)
+        st.write("### Loaded Sales")
+        st.dataframe(loaded_sales)
+        st.write("### Loaded Expenses")
+        st.dataframe(loaded_expenses)
+
+ #date_to_save = st.date_input("Select Date to Save Data", value=datetime.today(), key="save_date")
+if st.button("Save Data"):
+    save_data(date_to_save.strftime("%Y-%m-%d"))
 
 
 #Expenses Table
