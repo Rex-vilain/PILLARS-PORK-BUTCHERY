@@ -142,23 +142,7 @@ manual_input_cols = [
 for col in manual_input_cols:
     data[col] = []
 
-st.write("Fill sales quantities and select payment method:")
 
-for i in range(max_rows):
-    cols1 = st.columns(12)
-    for j, col_name in enumerate(manual_input_cols):
-        if "Pay" in col_name:
-             # Ensure sales_data has enough rows before accessing it
-             current_value = sales_data[col_name][i] if i < len(sales_data) and col_name in sales_data.columns and pd.notna(sales_data[col_name][i]) else ""
-             # Find the index of the current value in payment_methods, default to 2 (empty string)
-             selected_index = payment_methods.index(current_value) if current_value in payment_methods else 2
-             data[col_name].append(cols1[j].selectbox(f"{col_name} (Row {i+1})", payment_methods, index=selected_index, key=f"{col_name}_{i}"))
-        else:
-            # Ensure sales_data has enough rows and the column exists before accessing it
-            val = sales_data[col_name][i] if i < len(sales_data) and col_name in sales_data.columns and pd.notna(sales_data[col_name][i]) else 0
-            data[col_name].append(cols1[j].number_input(f"{col_name} (Row {i+1})", min_value=0, value=int(val), key=f"{col_name}_{i}"))
-
-df_sales = pd.DataFrame(data)
 
 #Expenses Table
 st.header("Daily Expenses")
