@@ -64,7 +64,7 @@ sales_numeric_cols = [
 payment_methods = ["cash", "mpesa", ""]
 
 #We’ll build an editable table row by row in streamlit with inputs
-Limit max rows (e.g. 10 rows)
+#Limit max rows (e.g. 10 rows)
 max_rows = 10
 
 data = {}
